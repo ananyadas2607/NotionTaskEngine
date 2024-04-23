@@ -13,8 +13,9 @@ def main():
     
     # Example task operations
     tasks = task_service.fetch_all_tasks()
-    for task in tasks:
-        print(task)
+    print(tasks)
+    # for task in tasks:
+    #     print(task)
 
 if __name__ == "__main__":
     main()

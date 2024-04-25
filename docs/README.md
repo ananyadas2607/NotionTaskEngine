@@ -1,2 +1,2 @@
 # Notion Task Engine
-Visualizations to see the Notion 
+Innovation related to the Task Management System for Notion

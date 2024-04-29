@@ -135,7 +135,7 @@ def main():
     plt.close()
     print("Plot saved as 'example_plot.png'.")
 
-    git_push('src/results/my_plot.png','Update a plot')
+    # git_push('src/results/my_plot.png','Update a plot')
 
     # embed_image_in_notion(API_KEY,DATABASE_ID,)
 

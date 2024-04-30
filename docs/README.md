@@ -1,4 +1,4 @@
 # Notion Task Engine
-Innovation related to the Task Management System for Notion
+1. Create a visualization for the tasks database from Notion using the Notion API
 
 Contributions are welcome! 

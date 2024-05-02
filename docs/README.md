@@ -23,4 +23,4 @@ Here are some enhancements and features we are planning to implement:
 
 We aim to update the roadmap as we progress, so check back often to see what’s coming!
 
-Contributions are welcome! 
+

@@ -9,17 +9,39 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import subprocess
 import requests
+import streamlit as st
+import pandas as pd
+
+
+@st.cache(allow_output_mutation=True)
+def fetch_and_process_data(api_key, database_id):
+    client = NotionClient(api_key=api_key, database_id=database_id)
+    task_service = TaskService(client)
+    tasks = task_service.fetch_all_tasks()
+    return tasks
+
+
+def plot_data(data):
+    project_names = list(data.keys())
+    todo_counts = [data[name]['To Do'] for name in project_names]
+    doing_counts = [data[name]['Doing'] for name in project_names]
+    done_counts = [data[name]['Done'] for name in project_names]
+    
+    df = pd.DataFrame({
+        'Project Names': project_names * 3,
+        'Status': ['To Do'] * len(project_names) + ['Doing'] * len(project_names) + ['Done'] * len(project_names),
+        'Count': todo_counts + doing_counts + done_counts
+    })
+    
+    plt.figure(figsize=(16, 8))
+    sns.barplot(x='Project Names', y='Count', hue='Status', data=df, palette=['red', 'yellow', 'green'])
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    return plt
 
 
 def main():
-    # Initialize the Notion client with configuration settings
-    client = NotionClient(api_key=API_KEY, database_id=DATABASE_ID)
-    
-    # Initialize the service with the API client
-    task_service = TaskService(client)
-    
-    # Example task operations
-    tasks = task_service.fetch_all_tasks()
+    fetch_and_process_data(api_key=API_KEY, database_id=DATABASE_ID)
     
     folder_path = 'src'
 
@@ -123,7 +145,7 @@ def main():
     # Create a figure and axis
     plt.figure(figsize=(16, 8))
 
-    import pandas as pd
+    
     df = pd.DataFrame({
         'Project Names': project_names * 3,
         'Status': ['To Do'] * len(project_names) + ['Doing'] * len(project_names) + ['Done'] * len(project_names),
@@ -171,6 +193,18 @@ def main():
     # git_push('src/results/my_plot.png','Update a plot')
 
     # embed_image_in_notion(API_KEY,DATABASE_ID,)
+
+    st.title('Task Visualization Dashboard')
+    api_key = st.sidebar.text_input("API_KEY")
+    database_id = st.sidebar.text_input("DATABASE_ID")
+
+    if st.sidebar.button('Fetch and Display Data'):
+        if api_key and database_id:
+            data = fetch_and_process_data(api_key, database_id)
+            fig = plot_data(data)
+            st.pyplot(fig)
+        else:
+            st.error("Please provide both API Key and Database ID")
 
 
 def git_push(file_path, commit_message='Update plot'):

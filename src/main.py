@@ -5,43 +5,19 @@ from src.config.settings import API_KEY, DATABASE_ID
 import json
 import os
 from collections import Counter, defaultdict
-import matplotlib.pyplot as plt
 import seaborn as sns
-import subprocess
-import requests
-import streamlit as st
-import pandas as pd
-
-
-@st.cache(allow_output_mutation=True)
-def fetch_and_process_data(api_key, database_id):
-    client = NotionClient(api_key=api_key, database_id=database_id)
-    task_service = TaskService(client)
-    tasks = task_service.fetch_all_tasks()
-    return tasks
-
-
-def plot_data(data):
-    project_names = list(data.keys())
-    todo_counts = [data[name]['To Do'] for name in project_names]
-    doing_counts = [data[name]['Doing'] for name in project_names]
-    done_counts = [data[name]['Done'] for name in project_names]
-    
-    df = pd.DataFrame({
-        'Project Names': project_names * 3,
-        'Status': ['To Do'] * len(project_names) + ['Doing'] * len(project_names) + ['Done'] * len(project_names),
-        'Count': todo_counts + doing_counts + done_counts
-    })
-    
-    plt.figure(figsize=(16, 8))
-    sns.barplot(x='Project Names', y='Count', hue='Status', data=df, palette=['red', 'yellow', 'green'])
-    plt.xticks(rotation=45, ha='right')
-    plt.tight_layout()
-    return plt
+import matplotlib.pyplot as plt
+import plotly.express as px
+from bokeh.plotting import figure, show
+from bokeh.io import output_notebook
+from bokeh.models import ColumnDataSource, HoverTool
+from bokeh.transform import factor_cmap
 
 
 def main():
-    fetch_and_process_data(api_key=API_KEY, database_id=DATABASE_ID)
+    client = NotionClient(api_key=API_KEY, database_id=DATABASE_ID)
+    task_service = TaskService(client)
+    tasks = task_service.fetch_all_tasks()
     
     folder_path = 'src'
 
@@ -145,7 +121,7 @@ def main():
     # Create a figure and axis
     plt.figure(figsize=(16, 8))
 
-    
+    import pandas as pd
     df = pd.DataFrame({
         'Project Names': project_names * 3,
         'Status': ['To Do'] * len(project_names) + ['Doing'] * len(project_names) + ['Done'] * len(project_names),
@@ -168,15 +144,57 @@ def main():
 
     # Show the plot
     plt.tight_layout()
-    plt.show()
+    # plt.show()
     folder_path_for_the_pic_2 = 'src/results/seaborn'
 
     if not os.path.exists(folder_path_for_the_pic_2):
         os.makedirs(folder_path_for_the_pic_2)
     full_path_1 = os.path.join(folder_path_for_the_pic_2, 'my_plot_2.png')
     plt.savefig(full_path_1)
-    plt.close()
     print(f"Plot saved as '{full_path_1}'.")
+    
+    print(df.columns)
+    #Convert JSON data to dataframe
+    # df_long = df.melt(id_vars=['Project Names'], value_vars=['To Do', 'Doing', 'Done'], 
+    #               var_name='Status')
+    # print(df_long)
+
+    
+    # # Organize the data for Bokeh
+    # source = ColumnDataSource(df_long)
+
+    # # Define categories and colors
+    # categories = ['To Do', 'Doing', 'Done']
+    # colors = ["#c9d9d3", "#718dbf", "#e84d60"]
+
+    # # Create a figure
+    # p = figure(x_range=df['Project Names'].unique(), plot_height=250, title="Task Status by Project",
+    #         toolbar_location=None, tools="")
+
+    # # Add bars
+    # p.vbar(x='Project Names', top='Count', width=0.9, source=source, legend_field='Status',
+    #     fill_color=factor_cmap('Status', palette=colors, factors=categories))
+
+    # # Add hover tool
+    # hover = HoverTool()
+    # hover.tooltips = [
+    #     ("Project", "@{Project Names}"),
+    #     ("Status", "@Status"),
+    #     ("Count", "@Count")
+    # ]
+    # p.add_tools(hover)
+
+    # # Styling
+    # p.xgrid.grid_line_color = None
+    # p.y_range.start = 0
+    # p.legend.title = 'Status'
+    # p.legend.orientation = "horizontal"
+    # p.legend.location = "top_center"
+
+    # # Show the plot
+    # show(p)
+    
+
     # url = 'https://example.com/upload'  # Replace with the upload URL provided by the tool
     # files = {'file': open('plot.png', 'rb')}  # Open the plot.png file in binary mode
 
@@ -193,73 +211,6 @@ def main():
     # git_push('src/results/my_plot.png','Update a plot')
 
     # embed_image_in_notion(API_KEY,DATABASE_ID,)
-
-    st.title('Task Visualization Dashboard')
-    api_key = st.sidebar.text_input("API_KEY")
-    database_id = st.sidebar.text_input("DATABASE_ID")
-
-    if st.sidebar.button('Fetch and Display Data'):
-        if api_key and database_id:
-            data = fetch_and_process_data(api_key, database_id)
-            fig = plot_data(data)
-            st.pyplot(fig)
-        else:
-            st.error("Please provide both API Key and Database ID")
-
-
-def git_push(file_path, commit_message='Update plot'):
-    """
-    Pushes a file to a Git repository.
-    """
-    try:
-        # Add file to Git
-        subprocess.run(['git', 'add', file_path], check=True)
-        # Commit the changes
-        subprocess.run(['git', 'commit', '-m', commit_message], check=True)
-        # Push the commit
-        subprocess.run(['git', 'push'], check=True)
-
-        print("File pushed to GitHub successfully.")
-
-    except subprocess.CalledProcessError as e:
-        print(f"An error occurred: {e}")
-
-
-def embed_image_in_notion(notion_api_key, database_id, image_url):
-    """
-    Embed an image in a Notion page using the Notion API.
-    """
-    url = 'https://api.notion.com/v1/pages'
-    headers = {
-        'Authorization': f'Bearer {notion_api_key}',
-        'Content-Type': 'application/json',
-        'Notion-Version': '2021-05-13'
-    }
-    data = {
-        "parent": {"database_id": database_id},
-        "properties": {
-            "Name": {
-                "title": [
-                    {"text": {"content": "Task Status Visualization"}}
-                ]
-            }
-        },
-        "children": [
-            {
-                "object": "block",
-                "type": "image",
-                "image": {
-                    "type": "external",
-                    "external": {"url": image_url}
-                }
-            }
-        ]
-    }
-    response = requests.post(url, headers=headers, json=data)
-    if response.status_code == 200:
-        print("Image successfully embedded in Notion.")
-    else:
-        print(f"Failed to embed image: {response.text}")
 
 
 if __name__ == "__main__":

@@ -83,7 +83,7 @@ def main():
     client = NotionClient(api_key=API_KEY, database_id=DATABASE_ID)
     
     file_path = 'src/output_results.json'
-    save_path = 'src/results'
+    save_path = 'src/static/results'
 
     fetch_and_save_tasks(client, file_path)
     data = load_data_from_file(file_path)
